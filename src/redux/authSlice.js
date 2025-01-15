@@ -41,10 +41,12 @@ const authSlice = createSlice({
     user: null,
     loading: false,
     error: null,
+    enter:null,
   },
   reducers: {
     logout(state) {
       state.user = null;
+      state.enter=null;
     },
   },
   extraReducers: (builder) => {
@@ -53,27 +55,33 @@ const authSlice = createSlice({
       .addCase(signupUser.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.enter = null;
       })
       .addCase(signupUser.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload;
+        state.enter=null;
       })
       .addCase(signupUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+        state.enter = null;
       })
       // Login User
       .addCase(loginUser.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.enter = null;
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload;
+        state.enter = true;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+        state.enter = null;
       });
   },
 });

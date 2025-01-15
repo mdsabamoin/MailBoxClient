@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Form, Button, Alert, Container } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
 import { signupUser, loginUser } from "../redux/authSlice";
 import Card from 'react-bootstrap/Card';
+import { useNavigate } from "react-router-dom";
 
 const Signup = () => {
   const [email, setEmail] = useState("");
@@ -11,7 +12,17 @@ const Signup = () => {
   const [isLogin, setIsLogin] = useState(false);
 
   const dispatch = useDispatch();
-  const { loading, error, user } = useSelector((state) => state.auth);
+  const navigate = useNavigate();
+  const { loading, error, user ,enter} = useSelector((state) => state.auth);
+
+//   localStorage.setItem("idToken",user.idToken);
+  
+  useEffect(() => {
+    if (enter) {
+      // If user exists in the state, navigate to the dashboard
+      navigate("/dashboard");
+    }
+  }, [enter, navigate]);
 
   const handleSignup = (e) => {
     e.preventDefault();
@@ -25,11 +36,12 @@ const Signup = () => {
   const handleLogin = (e) => {
     e.preventDefault();
     dispatch(loginUser({ email, password }));
+    
   };
 
   return (
     <div style={{display:"flex",justifyContent:"center",alignItems:"center",width:"100vw",height:"100vh"}}>
-    <Card style={{ width: '22rem' ,height:"34rem",backgroundColor:"orange"}}>
+    <Card style={{ width: '25%' ,height:"80%",backgroundColor:"orange"}}>
     <Container className="mt-5">
       <h2 className="text-center">{isLogin ? "Login" : "Signup"}</h2>
       <Form onSubmit={isLogin ? handleLogin : handleSignup}>
