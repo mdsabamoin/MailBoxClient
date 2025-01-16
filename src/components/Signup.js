@@ -20,7 +20,7 @@ const Signup = () => {
   useEffect(() => {
     if (enter) {
       // If user exists in the state, navigate to the dashboard
-      navigate("/dashboard");
+      navigate("/Inbox");
     }
   }, [enter, navigate]);
 

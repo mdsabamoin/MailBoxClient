@@ -3,6 +3,7 @@ import './App.css';
 import Signup from './components/Signup';
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import Dashboard from './components/Dashboard';
+import Inbox from './components/Inbox';
 const router = createBrowserRouter([
   {
     path: "/",
@@ -16,6 +17,10 @@ const router = createBrowserRouter([
     path: "*",
     element: <Signup/>,
   },
+  {
+    path:"/Inbox",
+    element:<Inbox/>
+  }
 ]);
 function App() {
   return (

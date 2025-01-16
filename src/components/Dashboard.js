@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { EditorState, convertToRaw } from "draft-js";
 import { Editor } from "react-draft-wysiwyg";
 import { Button, Form, Container, Row, Col } from "react-bootstrap";
+import { FaTimes } from "react-icons/fa"; // Importing the cross icon
 import "react-draft-wysiwyg/dist/react-draft-wysiwyg.css";
 import axios from "axios";
 
@@ -12,10 +13,10 @@ const Dashboard = () => {
   const [subject, setSubject] = useState("");
   const [editorState, setEditorState] = useState(EditorState.createEmpty());
   const [isSending, setIsSending] = useState(false);
-  const { user } = useSelector((state) => state.auth); // Get the current user (sender)
+  const { enter, user } = useSelector((state) => state.auth); // Get the current user (sender)
   const navigate = useNavigate();
 
-  if (!user) {
+  if (!enter) {
     navigate("/"); // If no user is logged in, navigate to login/signup page
   }
 
@@ -71,8 +72,26 @@ const Dashboard = () => {
     }
   };
 
+  const handleNavigateToInbox = () => {
+    navigate("/inbox"); // Navigate to the inbox component
+  };
+
   return (
     <Container className="mt-5" style={{ maxWidth: "800px" }}>
+      {/* Cross Icon */}
+      <div className="d-flex justify-content-end">
+        <FaTimes
+          onClick={handleNavigateToInbox}
+          style={{
+            cursor: "pointer",
+            fontSize: "1.5rem",
+            color: "#dc3545",
+          }}
+          title="Close and go to Inbox"
+        />
+      </div>
+
+      {/* Compose Email Form */}
       <h2 className="text-center mb-4">Compose Email</h2>
       <Form>
         <Form.Group as={Row} className="mb-3" controlId="formRecipient">
@@ -111,7 +130,7 @@ const Dashboard = () => {
           </Form.Label>
           <Col sm={10}>
             <Editor
-               editorStyle={{
+              editorStyle={{
                 border: "1px solid #ced4da",
                 borderRadius: "4px",
                 padding: "10px",
@@ -122,7 +141,6 @@ const Dashboard = () => {
               wrapperClassName="demo-wrapper"
               editorClassName="demo-editor"
               toolbarClassName="demo-toolbar"
-             
             />
           </Col>
         </Form.Group>
