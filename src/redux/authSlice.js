@@ -27,6 +27,7 @@ export const loginUser = createAsyncThunk(
         `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${API_KEY}`,
         { email, password, returnSecureToken: true }
       );
+      
       return response.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.error?.message || "Login failed");

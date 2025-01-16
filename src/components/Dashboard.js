@@ -40,6 +40,7 @@ const Dashboard = () => {
       recipient,
       subject,
       message: emailContent,
+      read:false,
     };
 
     try {
@@ -73,7 +74,7 @@ const Dashboard = () => {
   };
 
   const handleNavigateToInbox = () => {
-    navigate("/inbox"); // Navigate to the inbox component
+    window.history.go(-1); // Navigate to the inbox component
   };
 
   return (
