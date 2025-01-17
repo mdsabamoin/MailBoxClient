@@ -20,28 +20,28 @@ import Dashboard from "./Dashboard";
 const Inbox = () => {
   const dispatch = useDispatch();
   const { mails, unreadCount } = useSelector((state) => state.mail); // Mail state
-  const {user} = useSelector((state)=>state.auth);
+  const { user } = useSelector((state) => state.auth);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false); // State for Modal visibility
   const [selectedMail, setSelectedMail] = useState(null); // State for selected mail details
   const [showComposeModal, setShowComposeModal] = useState(false);
+  const [view, setView] = useState("inbox"); // Tracks current view: "inbox" or "sent"
   const location = useLocation();
 
   const queryParams = new URLSearchParams(location.search);
   const email = queryParams.get("email");
 
-
   useEffect(() => {
-    const queryParams = new URLSearchParams(location.search);
-    const email = queryParams.get("email");
-
     const fetchMails = async () => {
       try {
         setLoading(true);
         const userEmail = email?.replace(".", ",");
-        const response = await axios.get(
-          `https://mailboxclient-5823c-default-rtdb.firebaseio.com/inbox/${userEmail}.json`
-        );
+        const apiPath =
+          view === "inbox"
+            ? `https://mailboxclient-5823c-default-rtdb.firebaseio.com/inbox/${userEmail}.json`
+            : `https://mailboxclient-5823c-default-rtdb.firebaseio.com/sentbox/${userEmail}.json`;
+
+        const response = await axios.get(apiPath);
 
         const mailData = response.data
           ? Object.keys(response.data).map((key) => {
@@ -71,70 +71,39 @@ const Inbox = () => {
     };
 
     fetchMails();
-  }, [dispatch, location]);
+  }, [dispatch, email, view]);
 
-  const handleMailClick = async (mailId) => {
+  const handleMailClick = (mailId) => {
     const mail = mails.find((m) => m.id === mailId);
-    if (!mail.read) {
-      try {
-        await axios.patch(
-          `https://mailboxclient-5823c-default-rtdb.firebaseio.com/inbox/${mailId}.json`,
+
+    if (view === "inbox" && !mail.read) {
+      axios
+        .patch(
+          `https://mailboxclient-5823c-default-rtdb.firebaseio.com/inbox/${email.replace(".", ",")}/${mailId}.json`,
           { read: true }
-        );
-        dispatch(markAsRead(mailId));
-      } catch (error) {
-        alert("Error updating read status: " + error.message);
-      }
+        )
+        .then(() => dispatch(markAsRead(mailId)))
+        .catch((error) => alert("Error updating read status: " + error.message));
     }
 
-    setSelectedMail(mail); // Set the selected mail details
-    setShowModal(true); // Show the modal
+    setSelectedMail(mail);
+    setShowModal(true);
   };
-
-  const handleDeleteMail = async (mailId) => {
-    try {
-      const userEmail = email?.replace(".", ",");
-      const deletePath = `https://mailboxclient-5823c-default-rtdb.firebaseio.com/inbox/${userEmail}/${mailId}.json`;
-  
-      console.log("Delete Path:", deletePath); // Log the path
-  
-      await axios.delete(deletePath);
-  
-      const updatedMails = mails.filter((mail) => mail.id !== mailId);
-      dispatch(setMails(updatedMails));
-  
-      alert("Mail deleted successfully.");
-    } catch (error) {
-      console.error("Error deleting mail:", error); // Log the error
-      alert("Error deleting mail: " + error.message);
-    }
-  };
-  
-  
-  
 
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedMail(null);
   };
 
-  const handleCompose = () => {
-    setShowComposeModal(true); // Show the compose modal
-    
-  };
+  const handleCompose = () => setShowComposeModal(true);
 
-  const handleCloseComposeModal = () => {
-    setShowComposeModal(false); // Close the compose modal
-  };
+  const handleCloseComposeModal = () => setShowComposeModal(false);
 
   return (
     <>
       <Navbar bg="secondary" className="mb-4 shadow-sm">
         <Container>
-          <Navbar.Brand
-            className="fw-bold"
-            style={{ fontSize: "1.5rem", color: "white" }}
-          >
+          <Navbar.Brand className="fw-bold text-white" style={{ fontSize: "1.5rem" }}>
             Mailbox
           </Navbar.Brand>
           <Form className="d-flex mx-auto" style={{ width: "50%" }}>
@@ -156,10 +125,25 @@ const Inbox = () => {
           <Col md={3} className="bg-light p-4 border rounded">
             <h5 className="fw-bold text-secondary">Messages</h5>
             <p className="text-muted fs-5">Total: {mails.length}</p>
-            <p className="text-muted fs-5">Unread: {unreadCount}</p>
+            {view === "inbox" && <p className="text-muted fs-5">Unread: {unreadCount}</p>}
+            <Button
+              variant={view === "inbox" ? "secondary" : "light"}
+              className="w-100 mb-2"
+              onClick={() => setView("inbox")}
+            >
+              Inbox
+            </Button>
+            <Button
+              variant={view === "sent" ? "secondary" : "light"}
+              className="w-100"
+              onClick={() => setView("sent")}
+            >
+              Sent
+            </Button>
           </Col>
+
           <Col md={9}>
-            <h2 className="text-center mb-4 text-primary">Inbox</h2>
+            <h2 className="text-center mb-4 text-primary">{view === "inbox" ? "Inbox" : "Sent"}</h2>
 
             {loading ? (
               <div className="text-center mt-4">
@@ -169,11 +153,10 @@ const Inbox = () => {
               <Table striped bordered hover responsive className="shadow-sm">
                 <thead className="table-secondary">
                   <tr>
-                    <th>From</th>
+                    <th>{view === "inbox" ? "From" : "To"}</th>
                     <th>Subject</th>
                     <th>Message</th>
                     <th>Date</th>
-                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -185,9 +168,10 @@ const Inbox = () => {
                         cursor: "pointer",
                         backgroundColor: mail.read ? "white" : "#e6f7ff",
                       }}
+                      onClick={() => handleMailClick(mail.id)}
                     >
                       <td>
-                        {!mail.read && (
+                        {!mail.read && view === "inbox" && (
                           <span
                             style={{
                               color: "blue",
@@ -198,26 +182,11 @@ const Inbox = () => {
                             ●
                           </span>
                         )}
-                        {mail.sender}
+                        {view === "inbox" ? mail.sender : mail.recipient}
                       </td>
-                      <td onClick={() => handleMailClick(mail.id)}>
-                        {mail.subject}
-                      </td>
-                      <td onClick={() => handleMailClick(mail.id)}>
-                        {mail.message.slice(0, 50)}...
-                      </td>
-                      <td onClick={() => handleMailClick(mail.id)}>
-                        {new Date(mail.timestamp || Date.now()).toLocaleString()}
-                      </td>
-                      <td>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => handleDeleteMail(mail.id)}
-                        >
-                          Delete
-                        </Button>
-                      </td>
+                      <td>{mail.subject}</td>
+                      <td>{mail.message.slice(0, 50)}...</td>
+                      <td>{new Date(mail.timestamp || Date.now()).toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -232,30 +201,28 @@ const Inbox = () => {
       {selectedMail && (
         <Modal show={showModal} onHide={handleCloseModal} size="lg">
           <Modal.Header closeButton>
-            <Modal.Title>Message from {selectedMail.sender}</Modal.Title>
+            <Modal.Title>
+              {view === "inbox"
+                ? `Message from ${selectedMail.sender}`
+                : `Message to ${selectedMail.recipient}`}
+            </Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            <div>
-              <h5>Subject: {selectedMail.subject}</h5>
-              <p>
-                <strong>Date:</strong>{" "}
-                {new Date(selectedMail.timestamp || Date.now()).toLocaleString()}
-              </p>
-              <hr />
-              <p>
-                <strong>Message:</strong>
-              </p>
-              <div
-                dangerouslySetInnerHTML={{ __html: selectedMail.message }}
-              ></div>
-            </div>
+            <h5>Subject: {selectedMail.subject}</h5>
+            <p>
+              <strong>Date:</strong>{" "}
+              {new Date(selectedMail.timestamp || Date.now()).toLocaleString()}
+            </p>
+            <hr />
+            <p>
+              <strong>Message:</strong>
+            </p>
+            <div dangerouslySetInnerHTML={{ __html: selectedMail.message }}></div>
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={handleCloseModal}>
               Close
             </Button>
-            <Button variant="primary">Reply</Button>
-            <Button variant="info">Forward</Button>
           </Modal.Footer>
         </Modal>
       )}
@@ -265,7 +232,7 @@ const Inbox = () => {
           <Modal.Title>Compose Email</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <Dashboard /> {/* Render Dashboard component here */}
+          <Dashboard />
         </Modal.Body>
       </Modal>
     </>

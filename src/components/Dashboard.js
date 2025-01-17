@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate ,useLocation} from "react-router-dom";
 import { EditorState, convertToRaw } from "draft-js";
 import { Editor } from "react-draft-wysiwyg";
 import { Button, Form, Container, Row, Col } from "react-bootstrap";
 import { FaTimes } from "react-icons/fa"; // Importing the cross icon
 import "react-draft-wysiwyg/dist/react-draft-wysiwyg.css";
 import axios from "axios";
+
 
 const Dashboard = () => {
   const [recipient, setRecipient] = useState("");
@@ -15,8 +16,11 @@ const Dashboard = () => {
   const [isSending, setIsSending] = useState(false);
   const { enter, user } = useSelector((state) => state.auth); // Get the current user (sender)
   const navigate = useNavigate();
+  const location = useLocation();
 
-  
+  const queryParams = new URLSearchParams(location.search);
+  const email = queryParams.get("email");
+
   const handleEditorChange = (state) => {
     setEditorState(state);
   };
@@ -33,7 +37,7 @@ const Dashboard = () => {
 
     const emailContent = JSON.stringify(convertToRaw(editorState.getCurrentContent()));
     const emailData = {
-      sender: user.email,
+      sender: email,
       recipient,
       subject,
       message: emailContent,
@@ -43,7 +47,7 @@ const Dashboard = () => {
     try {
       // Save email in the sender's sentbox
       await axios.post(
-        `https://mailboxclient-5823c-default-rtdb.firebaseio.com/sentbox/${user.email.replace(
+        `https://mailboxclient-5823c-default-rtdb.firebaseio.com/sentbox/${email?.replace(
           ".",
           ","
         )}.json`,
