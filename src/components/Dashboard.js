@@ -16,10 +16,7 @@ const Dashboard = () => {
   const { enter, user } = useSelector((state) => state.auth); // Get the current user (sender)
   const navigate = useNavigate();
 
-  if (!enter) {
-    navigate("/"); // If no user is logged in, navigate to login/signup page
-  }
-
+  
   const handleEditorChange = (state) => {
     setEditorState(state);
   };
@@ -73,27 +70,12 @@ const Dashboard = () => {
     }
   };
 
-  const handleNavigateToInbox = () => {
-    window.history.go(-1); // Navigate to the inbox component
-  };
-
+ 
   return (
     <Container className="mt-5" style={{ maxWidth: "800px" }}>
-      {/* Cross Icon */}
-      <div className="d-flex justify-content-end">
-        <FaTimes
-          onClick={handleNavigateToInbox}
-          style={{
-            cursor: "pointer",
-            fontSize: "1.5rem",
-            color: "#dc3545",
-          }}
-          title="Close and go to Inbox"
-        />
-      </div>
+      
 
       {/* Compose Email Form */}
-      <h2 className="text-center mb-4">Compose Email</h2>
       <Form>
         <Form.Group as={Row} className="mb-3" controlId="formRecipient">
           <Form.Label column sm={2}>

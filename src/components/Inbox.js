@@ -1,34 +1,44 @@
 import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import axios from "axios";
-import { Table, Button, Container, Row, Col, Spinner, Navbar, Form, Modal } from "react-bootstrap";
-import { setMails, markAsRead } from "../redux/mailSlice"; // Import actions from Redux slice
+import {
+  Table,
+  Button,
+  Container,
+  Row,
+  Col,
+  Spinner,
+  Navbar,
+  Form,
+  Modal,
+} from "react-bootstrap";
+import { setMails, markAsRead } from "../redux/mailSlice";
 import { convertFromRaw } from "draft-js";
+import Dashboard from "./Dashboard";
 
 const Inbox = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { enter, user } = useSelector((state) => state.auth); // Auth state
   const { mails, unreadCount } = useSelector((state) => state.mail); // Mail state
+  const {user} = useSelector((state)=>state.auth);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false); // State for Modal visibility
   const [selectedMail, setSelectedMail] = useState(null); // State for selected mail details
+  const [showComposeModal, setShowComposeModal] = useState(false);
   const location = useLocation();
 
-//   if (!enter) {
-//     navigate("/");
-//   }
+  const queryParams = new URLSearchParams(location.search);
+  const email = queryParams.get("email");
+
 
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
-    const email = queryParams.get('email');
+    const email = queryParams.get("email");
+
     const fetchMails = async () => {
-        
       try {
         setLoading(true);
         const userEmail = email?.replace(".", ",");
-        console.log(userEmail,"useremailbbbb");
         const response = await axios.get(
           `https://mailboxclient-5823c-default-rtdb.firebaseio.com/inbox/${userEmail}.json`
         );
@@ -61,14 +71,14 @@ const Inbox = () => {
     };
 
     fetchMails();
-  }, [user?.email, dispatch]);
+  }, [dispatch, location]);
 
   const handleMailClick = async (mailId) => {
-    const mail = mails?.find((m) => m.id === mailId);
+    const mail = mails.find((m) => m.id === mailId);
     if (!mail.read) {
       try {
         await axios.patch(
-          `https://mailboxclient-5823c-default-rtdb.firebaseio.com/inbox/${user?.email?.replace(".", ",")}/${mailId}.json`,
+          `https://mailboxclient-5823c-default-rtdb.firebaseio.com/inbox/${mailId}.json`,
           { read: true }
         );
         dispatch(markAsRead(mailId));
@@ -81,21 +91,50 @@ const Inbox = () => {
     setShowModal(true); // Show the modal
   };
 
+  const handleDeleteMail = async (mailId) => {
+    try {
+      const userEmail = email?.replace(".", ",");
+      const deletePath = `https://mailboxclient-5823c-default-rtdb.firebaseio.com/inbox/${userEmail}/${mailId}.json`;
+  
+      console.log("Delete Path:", deletePath); // Log the path
+  
+      await axios.delete(deletePath);
+  
+      const updatedMails = mails.filter((mail) => mail.id !== mailId);
+      dispatch(setMails(updatedMails));
+  
+      alert("Mail deleted successfully.");
+    } catch (error) {
+      console.error("Error deleting mail:", error); // Log the error
+      alert("Error deleting mail: " + error.message);
+    }
+  };
+  
+  
+  
+
   const handleCloseModal = () => {
-    setShowModal(false); // Close the modal
-    setSelectedMail(null); // Reset the selected mail
+    setShowModal(false);
+    setSelectedMail(null);
   };
 
   const handleCompose = () => {
-    navigate("/dashboard");
+    setShowComposeModal(true); // Show the compose modal
+    
+  };
+
+  const handleCloseComposeModal = () => {
+    setShowComposeModal(false); // Close the compose modal
   };
 
   return (
     <>
-      {/* Navbar */}
       <Navbar bg="secondary" className="mb-4 shadow-sm">
         <Container>
-          <Navbar.Brand className="fw-bold" style={{ fontSize: "1.5rem", color: "white" }}>
+          <Navbar.Brand
+            className="fw-bold"
+            style={{ fontSize: "1.5rem", color: "white" }}
+          >
             Mailbox
           </Navbar.Brand>
           <Form className="d-flex mx-auto" style={{ width: "50%" }}>
@@ -112,11 +151,9 @@ const Inbox = () => {
         </Container>
       </Navbar>
 
-      {/* Main Inbox Section */}
       <Container className="mt-3">
         <Row>
           <Col md={3} className="bg-light p-4 border rounded">
-            {/* Sidebar for Total and Unread Messages */}
             <h5 className="fw-bold text-secondary">Messages</h5>
             <p className="text-muted fs-5">Total: {mails.length}</p>
             <p className="text-muted fs-5">Unread: {unreadCount}</p>
@@ -136,13 +173,13 @@ const Inbox = () => {
                     <th>Subject</th>
                     <th>Message</th>
                     <th>Date</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {mails.map((mail) => (
                     <tr
                       key={mail.id}
-                      onClick={() => handleMailClick(mail.id)}
                       style={{
                         fontWeight: mail.read ? "normal" : "bold",
                         cursor: "pointer",
@@ -163,9 +200,24 @@ const Inbox = () => {
                         )}
                         {mail.sender}
                       </td>
-                      <td>{mail.subject}</td>
-                      <td>{mail.message.slice(0, 50)}...</td>
-                      <td>{new Date(mail.timestamp || Date.now()).toLocaleString()}</td>
+                      <td onClick={() => handleMailClick(mail.id)}>
+                        {mail.subject}
+                      </td>
+                      <td onClick={() => handleMailClick(mail.id)}>
+                        {mail.message.slice(0, 50)}...
+                      </td>
+                      <td onClick={() => handleMailClick(mail.id)}>
+                        {new Date(mail.timestamp || Date.now()).toLocaleString()}
+                      </td>
+                      <td>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => handleDeleteMail(mail.id)}
+                        >
+                          Delete
+                        </Button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -177,7 +229,6 @@ const Inbox = () => {
         </Row>
       </Container>
 
-      {/* Modal for reading the full mail */}
       {selectedMail && (
         <Modal show={showModal} onHide={handleCloseModal} size="lg">
           <Modal.Header closeButton>
@@ -186,10 +237,17 @@ const Inbox = () => {
           <Modal.Body>
             <div>
               <h5>Subject: {selectedMail.subject}</h5>
-              <p><strong>Date:</strong> {new Date(selectedMail.timestamp || Date.now()).toLocaleString()}</p>
+              <p>
+                <strong>Date:</strong>{" "}
+                {new Date(selectedMail.timestamp || Date.now()).toLocaleString()}
+              </p>
               <hr />
-              <p><strong>Message:</strong></p>
-              <div dangerouslySetInnerHTML={{ __html: selectedMail.message }}></div>
+              <p>
+                <strong>Message:</strong>
+              </p>
+              <div
+                dangerouslySetInnerHTML={{ __html: selectedMail.message }}
+              ></div>
             </div>
           </Modal.Body>
           <Modal.Footer>
@@ -201,6 +259,15 @@ const Inbox = () => {
           </Modal.Footer>
         </Modal>
       )}
+
+      <Modal show={showComposeModal} onHide={handleCloseComposeModal} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Compose Email</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Dashboard /> {/* Render Dashboard component here */}
+        </Modal.Body>
+      </Modal>
     </>
   );
 };
